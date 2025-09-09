@@ -1,6 +1,8 @@
+import java.util.LinkedList;
 import java.util.Queue;
 import java.util.Scanner;
 
+//Khởi tạo Node lưu data và con trái, con phải
 class Node {
     int data;
     Node left, right;
@@ -11,60 +13,55 @@ class Node {
     }
 }
 
-class BinaryTree {
-    //Mỗi node có thể có tối đa 2 con: left và right
-    Node root;
-    public BinaryTree() {
-        root = null;
+
+//Binary Tree Search: với quy tắc Node trái < Node gốc < Node phải
+class BTS {
+    Node node;
+    public BTS() {
+        node = null;
     }
 
-    //Insert method to add nodes to the tree
-    public void insert(int data) {
-        root = insertRec(root, data);
-    }
-
-    //Search method to find a node in the tree
-    public boolean search(int data) {
-        return searchRec(root, data);
-    }
-
-    private Node insertRec(Node root, int data) {
-        //Node left < Node root < Node right
-         if (root == null) {
-                root = new Node(data);
-                return root;
+    //Insert
+    private Node insert(Node node, int data) {
+         if (node == null) {
+             return new Node(data);
          }
-         if (data < root.data) {
-             root.left = insertRec(root.left, data);
-         } else if (data > root.data) {
-             root.right = insertRec(root.right, data);
-         } return root;
+         if (data < node.data) node.left = insert(node, data);
+         else if (data > node.data) node.right = insert(node, data);
+         return node;
     }
 
-    private boolean searchRec(Node root, int value) {
-        if (root == null) {
-            return false;
-        }
-        if (root.data == value) {
-            return true;
-        }
-        if (value > root.data) {
-            return searchRec(root.right, value);
-        }
-        return searchRec(root.left, value);
+    public void insert(int data) {
+        node = insert(node, data);
     }
 
-    //NLR: Root -> Left -> Right
-    public void preOrder(Node node) {
-        if (node == null) {
-            return;
+    //Delete
+    private Node delete(Node node, int key) {
+        if (node == null) return null;
+        if (key < node.data) {
+            node.left = delete(node, key);
+        } else if (key > node.data) {
+            node.right = delete(node, key);
+        } else {
+            //Trường hợp node lá chỉ có 1 node con
+            if (node.left == null) return node.right;
+            else if (node.right == null) return node.left;
+
+            //trường hợp node có 2 con
+            node.data = minValue(node.right); // Tìm giá trị nhỏ nhất trong cây con bên phải
+            node.right = delete(node.right, node.data); // Xóa giá trị nhỏ
         }
-        System.out.println(node.data + " ");
-        preOrder(node.left);
-        preOrder(node.right);
+        return node;
     }
 
-    //LNR: Left -> Root -> Right
+    public void delete(int key) {
+        node = delete(node, key);
+        System.out.println("Deleted " + key);
+    }
+
+    //Duyệt
+
+    //1. In-order (LNR): Left -> Node -> Right
     public void inOrder(Node node) {
         if (node == null) return;
         inOrder(node.left);
@@ -72,7 +69,15 @@ class BinaryTree {
         inOrder(node.right);
     }
 
-    //LRN: Left -> Right -> Root
+    //2. Pre-order (NLR): Node -> Left -> Right
+    public void preOrder(Node node) {
+        if (node == null) return;
+        System.out.print(node.data + " ");
+        preOrder(node.left);
+        preOrder(node.right);
+    }
+
+    //3. Post-order (LRN): Left -> Right -> Node
     public void postOrder(Node node) {
         if (node == null) return;
         postOrder(node.left);
@@ -80,11 +85,11 @@ class BinaryTree {
         System.out.print(node.data + " ");
     }
 
-    //Breadth-First Search (BFS) or Level Order Traversal
+    //4. Level-order (BFS)
     public void levelOrder() {
-        if (root == null) return;
-        Queue<Node> queue = new java.util.LinkedList<>();
-        queue.add(root);
+        if (node == null) return; // cây rỗng => dừng
+        Queue<Node> queue = new LinkedList<>(); // Tạo Queue để lưu các node
+        queue.add(node);
         while (!queue.isEmpty()) {
             Node temp = queue.poll();
             System.out.print(temp.data + " ");
@@ -96,6 +101,39 @@ class BinaryTree {
             }
         }
     }
+
+    //Search
+    private boolean searchRec(Node node, int key) {
+        //Check root != null && key == root.data => return true
+        if (node == null) return false;
+        if (node.data == key) return true;
+
+        // Key > root => tìm phải
+        if (key > node.data) return searchRec(node.right, key);
+
+        // key < root => tìm trái
+        return searchRec(node.left, key);
+    }
+
+    public boolean search(int key) {
+        return searchRec(node, key);
+    }
+
+
+    //PUBLIC METHOD
+    int minValue(Node node) {
+        int min = node.data;
+        while (node.left != null) {
+            node = node.left;
+            min = node.data;
+        }
+        return min;
+    }
+
+    public Node getNode() {
+        return node;
+    }
+
 }
 
 
@@ -103,33 +141,48 @@ public class Main {
     public static void main(String[] args) {
         Scanner sc = new Scanner(System.in);
 
-        BinaryTree tree = new BinaryTree();
-        System.out.println("Enter number of nodes to insert:");
+        BTS tree = new BTS();
+
         int n = sc.nextInt();
         int[] a = new int[n];
-        for (int i = 0; i < n; i++) {
-            a[i] = sc.nextInt();
-            tree.insert(a[i]);
+        for(int i = 0; i < n; i++) {
+            //Insert call
+            tree.insert(a[i] = sc.nextInt());
         }
 
-        System.out.println("In-order (LNR): ");
-        tree.inOrder(tree.root);  // Output: 20 30 40 50 60 70 80
+        //Duyệt cây
+        System.out.println("In-order (Left -> Node -> Right): ");
+        tree.inOrder(tree.node);
         System.out.println();
 
-        System.out.println("Pre-order (NLR): ");
-        tree.preOrder(tree.root);  // Output: 50 30 20 40 70 60 80
+        System.out.println("Pre-order (Node -> Left -> Right): ");
+        tree.preOrder(tree.node);
         System.out.println();
 
-        System.out.println("Post-order (LRN): ");
-        tree.postOrder(tree.root); // Output: 20 40 30 60 80 70 50
+        System.out.println("Post-order (Left -> Right -> Node): ");
+        tree.postOrder(tree.node);
         System.out.println();
 
         System.out.println("Level-order (BFS): ");
-        tree.levelOrder();         // Output: 50 30 70 20 40 60 80
+        tree.levelOrder();
         System.out.println();
 
-        System.out.println("Search 40: " + tree.search(40)); // true
-        System.out.println("Search 90: " + tree.search(90)); // false
+        //Delete
+        System.out.println("Enter value to delete: ");
+        int key = sc.nextInt();
+        tree.delete(key);
+        System.out.println("In-order after delete " + key + ": ");
+        tree.inOrder(tree.node);
+        System.out.println();
+
+        //Search
+        System.out.println("Enter value to search: ");
+        int searchKey = sc.nextInt();
+        if (tree.search(searchKey)) {
+            System.out.println("Found " + searchKey + " in the tree.");
+        } else {
+            System.out.println(searchKey + " not found in the tree.");
+        }
 
         sc.close();
     }
